@@ -1,0 +1,18 @@
+{
+    "words": [
+        "binascii",
+        "btih",
+        "infohash",
+        "librqbit",
+        "metainfo",
+        "rqbit",
+        "serde",
+        "Slowloris",
+        "thiserror"
+    ],
+    "enableFiletypes": [
+        "dockerfile",
+        "shellscript",
+        "toml"
+    ]
+}
