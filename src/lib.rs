@@ -4,6 +4,7 @@ use camino::Utf8PathBuf;
 use librqbit::Session;
 use server::cache::Cache;
 
+pub mod client;
 pub mod info_hash;
 pub mod server;
 
