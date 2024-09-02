@@ -1,20 +1,15 @@
 use std::sync::Arc;
 
-use camino::Utf8PathBuf;
-use librqbit::Session;
-use server::cache::Cache;
+use api::cache::Cache;
+use bit_torrent::client::Client;
+use config::Config;
 
-pub mod client;
-pub mod info_hash;
-pub mod server;
-
-pub struct Config {
-    pub session_output_dir: Utf8PathBuf,
-    pub cache_dir: Utf8PathBuf,
-}
+pub mod api;
+pub mod bit_torrent;
+pub mod config;
 
 pub struct AppState {
     pub config: Arc<Config>,
-    pub session: Arc<Session>,
+    pub client: Arc<Client>,
     pub cache: Arc<Cache>,
 }

@@ -6,7 +6,7 @@ use std::{
 use bytes::Bytes;
 use camino::Utf8PathBuf;
 
-use crate::info_hash::InfoHash;
+use crate::bit_torrent::info_hash::InfoHash;
 
 pub struct Cache {
     pub cache_dir: Utf8PathBuf,

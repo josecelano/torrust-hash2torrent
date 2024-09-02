@@ -19,7 +19,7 @@ use tower::{timeout::TimeoutLayer, ServiceBuilder};
 use tower_http::trace::TraceLayer;
 use tracing::info;
 
-use crate::server::slowloris::TimeoutAcceptor;
+use crate::api::slowloris::TimeoutAcceptor;
 use crate::AppState;
 
 const TIMEOUT: Duration = Duration::from_secs(10);

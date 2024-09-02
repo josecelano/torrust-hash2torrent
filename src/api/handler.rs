@@ -8,8 +8,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use tracing::{debug, error, info, trace};
 
-use crate::client::resolve_magnet;
-use crate::info_hash::InfoHash;
+use crate::bit_torrent::info_hash::InfoHash;
 
 use crate::AppState;
 
@@ -53,7 +52,7 @@ pub async fn get_metainfo(
 
     let magnet_link = format!("magnet:?xt=urn:btih:{}", info_hash.to_hex_string());
 
-    let Ok((_info, bytes)) = resolve_magnet(app_state.session.clone(), magnet_link).await else {
+    let Ok((_info, bytes)) = app_state.client.resolve_magnet(magnet_link).await else {
         return (StatusCode::INTERNAL_SERVER_ERROR, "BitTorrent client error").into_response();
     };
 
