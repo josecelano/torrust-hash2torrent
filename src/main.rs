@@ -4,16 +4,22 @@ use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     sync::Arc,
 };
-use torrust_hash2torrent::{server, AppState, Config};
+use torrust_hash2torrent::{
+    server::{self, cache::Cache},
+    AppState, Config,
+};
 use tracing::info;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     tracing_subscriber::fmt().init();
 
+    let session_output_dir = "./storage/session";
+    let cache_dir = "./storage/torrents";
+
     let config = Config {
-        session_output_dir: "./storage/session".into(),
-        cache_dir: "./storage/torrents".into(),
+        session_output_dir: session_output_dir.into(),
+        cache_dir: cache_dir.into(),
     };
 
     // Create the session
@@ -31,8 +37,9 @@ async fn main() -> Result<(), anyhow::Error> {
     info!("starting server on: http://{server_addr} ..."); // DevSkim: ignore DS137138
 
     let app_state = AppState {
-        session,
         config: Arc::new(config),
+        session,
+        cache: Arc::new(Cache::new(cache_dir.into())),
     };
 
     server::start(&server_addr, app_state).await;

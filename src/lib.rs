@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use camino::Utf8PathBuf;
 use librqbit::Session;
+use server::cache::Cache;
 
 pub mod info_hash;
 pub mod server;
@@ -12,6 +13,7 @@ pub struct Config {
 }
 
 pub struct AppState {
-    pub session: Arc<Session>,
     pub config: Arc<Config>,
+    pub session: Arc<Session>,
+    pub cache: Arc<Cache>,
 }

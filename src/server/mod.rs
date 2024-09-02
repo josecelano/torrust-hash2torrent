@@ -1,3 +1,4 @@
+pub mod cache;
 pub mod slowloris;
 
 use axum::error_handling::HandleErrorLayer;
@@ -7,7 +8,6 @@ use axum::routing::get;
 use axum::{BoxError, Router};
 use axum_server::Server;
 use bytes::Bytes;
-use camino::Utf8Path;
 use hyper::{header, HeaderMap, StatusCode};
 use hyper_util::rt::TokioTimer;
 use librqbit::{
@@ -15,8 +15,6 @@ use librqbit::{
     TorrentMetaV1Info,
 };
 use serde::Deserialize;
-use std::fs::File;
-use std::io::{self, Read, Write};
 use std::net::{SocketAddr, TcpListener};
 use std::str::FromStr;
 use std::sync::Arc;
@@ -24,7 +22,7 @@ use std::time::Duration;
 use thiserror::Error;
 use tower::{timeout::TimeoutLayer, ServiceBuilder};
 use tower_http::trace::TraceLayer;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, trace};
 
 use crate::info_hash::InfoHash;
 use crate::server::slowloris::TimeoutAcceptor;
@@ -123,12 +121,9 @@ async fn get_metainfo(
 
     info!("req: {}", info_hash.to_hex_string());
 
-    let mut cached_torrent_path = app_state.config.cache_dir.clone();
-    cached_torrent_path.push(format!("{}.torrent", info_hash.to_hex_string()));
-
-    if cached_torrent_path.exists() {
-        if let Ok(bytes) = load_torrent_from_cache(&cached_torrent_path) {
-            debug!("cached torrent: {}", cached_torrent_path);
+    if app_state.cache.contains(&info_hash) {
+        if let Ok(bytes) = app_state.cache.get(&info_hash) {
+            debug!("cached torrent: {}", app_state.cache.path(&info_hash));
 
             return torrent_file_response(
                 bytes,
@@ -144,8 +139,10 @@ async fn get_metainfo(
         return (StatusCode::INTERNAL_SERVER_ERROR, "BitTorrent client error").into_response();
     };
 
-    match add_torrent_to_cache(&bytes, &cached_torrent_path) {
-        Ok(()) => {}
+    match app_state.cache.add(&info_hash, &bytes) {
+        Ok(()) => {
+            trace!("added torrent to cache: {}", info_hash.to_hex_string());
+        }
         Err(err) => {
             error!("error adding torrent to cache: {}", err);
         }
@@ -221,28 +218,4 @@ pub fn torrent_file_response(bytes: Bytes, filename: &str, info_hash: &str) -> R
     );
 
     (StatusCode::OK, headers, bytes).into_response()
-}
-
-fn add_torrent_to_cache(data: &Bytes, file_path: &Utf8Path) -> io::Result<()> {
-    // Open or create the file in write-only mode
-    let mut file = File::create(file_path)?;
-
-    // Write all the bytes to the file
-    file.write_all(data)?;
-
-    Ok(())
-}
-
-fn load_torrent_from_cache(file_path: &Utf8Path) -> io::Result<Bytes> {
-    // Open the file in read-only mode
-    let mut file = File::open(file_path)?;
-
-    // Create a buffer to hold the file contents
-    let mut buffer = Vec::new();
-
-    // Read the file contents into the buffer
-    file.read_to_end(&mut buffer)?;
-
-    // Convert the buffer into a Bytes type
-    Ok(Bytes::from(buffer))
 }
