@@ -1,20 +1,26 @@
 use anyhow::Context;
 use librqbit::Session;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use torrust_hash2torrent::server;
+use std::{
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    sync::Arc,
+};
+use torrust_hash2torrent::{server, AppState, Config};
 use tracing::info;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     tracing_subscriber::fmt().init();
 
-    let output_dir = "./storage";
+    let config = Config {
+        session_output_dir: "./storage/session".into(),
+        cache_dir: "./storage/torrents".into(),
+    };
 
     // Create the session
 
     info!("creating BitTorrent client session ...");
 
-    let session = Session::new(output_dir.into())
+    let session = Session::new(config.session_output_dir.clone().into())
         .await
         .context("error creating session")?;
 
@@ -24,7 +30,12 @@ async fn main() -> Result<(), anyhow::Error> {
 
     info!("starting server on: http://{server_addr} ..."); // DevSkim: ignore DS137138
 
-    server::start(&server_addr, session).await;
+    let app_state = AppState {
+        session,
+        config: Arc::new(config),
+    };
+
+    server::start(&server_addr, app_state).await;
 
     Ok(())
 }

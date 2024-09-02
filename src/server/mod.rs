@@ -7,6 +7,7 @@ use axum::routing::get;
 use axum::{BoxError, Router};
 use axum_server::Server;
 use bytes::Bytes;
+use camino::Utf8Path;
 use hyper::{header, HeaderMap, StatusCode};
 use hyper_util::rt::TokioTimer;
 use librqbit::{
@@ -14,16 +15,20 @@ use librqbit::{
     TorrentMetaV1Info,
 };
 use serde::Deserialize;
+use std::fs::File;
+use std::io::{self, Read, Write};
 use std::net::{SocketAddr, TcpListener};
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
+use thiserror::Error;
 use tower::{timeout::TimeoutLayer, ServiceBuilder};
 use tower_http::trace::TraceLayer;
-use tracing::info;
+use tracing::{debug, error, info};
 
 use crate::info_hash::InfoHash;
 use crate::server::slowloris::TimeoutAcceptor;
+use crate::AppState;
 
 const TIMEOUT: Duration = Duration::from_secs(10);
 
@@ -43,8 +48,11 @@ impl InfoHashParam {
     }
 }
 
+#[derive(Error, Debug)]
 enum ResolveMagnetError {
+    #[error("Torrent was added to the BitTorrent client for downloading instead of only listing")]
     AddedForDownloading, // It should not be added for downloading.
+    #[error("Torrent could not been added to the BitTorrent client")]
     NotAdded,
 }
 
@@ -53,7 +61,7 @@ enum ResolveMagnetError {
 /// # Panics
 ///
 /// Will panic if it can get the local server address
-pub async fn start(bind_to: &SocketAddr, session: Arc<Session>) {
+pub async fn start(bind_to: &SocketAddr, state: AppState) {
     let socket =
         std::net::TcpListener::bind(bind_to).expect("Could not bind tcp_listener to address.");
 
@@ -77,7 +85,7 @@ pub async fn start(bind_to: &SocketAddr, session: Arc<Session>) {
                 }))
                 .layer(TimeoutLayer::new(TIMEOUT)),
         )
-        .with_state(session);
+        .with_state(Arc::new(state));
 
     server
         .acceptor(TimeoutAcceptor)
@@ -106,7 +114,7 @@ fn from_tcp_with_timeouts(socket: TcpListener) -> Server {
 }
 
 async fn get_metainfo(
-    State(session): State<Arc<Session>>,
+    State(app_state): State<Arc<AppState>>,
     Path(info_hash): Path<InfoHashParam>,
 ) -> Response {
     let Ok(info_hash) = InfoHash::from_str(&info_hash.lowercase()) else {
@@ -115,30 +123,39 @@ async fn get_metainfo(
 
     info!("req: {}", info_hash.to_hex_string());
 
+    let mut cached_torrent_path = app_state.config.cache_dir.clone();
+    cached_torrent_path.push(format!("{}.torrent", info_hash.to_hex_string()));
+
+    if cached_torrent_path.exists() {
+        if let Ok(bytes) = load_torrent_from_cache(&cached_torrent_path) {
+            debug!("cached torrent: {}", cached_torrent_path);
+
+            return torrent_file_response(
+                bytes,
+                &format!("{}.torrent", info_hash.to_hex_string()),
+                &info_hash.to_hex_string(),
+            );
+        }
+    }
+
     let magnet_link = format!("magnet:?xt=urn:btih:{}", info_hash.to_hex_string());
 
-    match resolve_magnet(session, magnet_link).await {
-        Ok((info, bytes)) => {
-            // Resolve torrent name
-            let name = if let Some(name) = info.name.as_ref() {
-                if let Ok(name) = std::str::from_utf8(name) {
-                    name
-                } else {
-                    &info_hash.to_hex_string()
-                }
-            } else {
-                &info_hash.to_hex_string()
-            };
+    let Ok((_info, bytes)) = resolve_magnet(app_state.session.clone(), magnet_link).await else {
+        return (StatusCode::INTERNAL_SERVER_ERROR, "BitTorrent client error").into_response();
+    };
 
-            // Return the torrent file as the response
-            torrent_file_response(
-                bytes,
-                &format!("{name}.torrent"),
-                &info_hash.to_hex_string(),
-            )
+    match add_torrent_to_cache(&bytes, &cached_torrent_path) {
+        Ok(()) => {}
+        Err(err) => {
+            error!("error adding torrent to cache: {}", err);
         }
-        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "BitTorrent client error").into_response(),
-    }
+    };
+
+    torrent_file_response(
+        bytes,
+        &format!("{}.torrent", info_hash.to_hex_string()),
+        &info_hash.to_hex_string(),
+    )
 }
 
 async fn resolve_magnet(
@@ -204,4 +221,28 @@ pub fn torrent_file_response(bytes: Bytes, filename: &str, info_hash: &str) -> R
     );
 
     (StatusCode::OK, headers, bytes).into_response()
+}
+
+fn add_torrent_to_cache(data: &Bytes, file_path: &Utf8Path) -> io::Result<()> {
+    // Open or create the file in write-only mode
+    let mut file = File::create(file_path)?;
+
+    // Write all the bytes to the file
+    file.write_all(data)?;
+
+    Ok(())
+}
+
+fn load_torrent_from_cache(file_path: &Utf8Path) -> io::Result<Bytes> {
+    // Open the file in read-only mode
+    let mut file = File::open(file_path)?;
+
+    // Create a buffer to hold the file contents
+    let mut buffer = Vec::new();
+
+    // Read the file contents into the buffer
+    file.read_to_end(&mut buffer)?;
+
+    // Convert the buffer into a Bytes type
+    Ok(Bytes::from(buffer))
 }
