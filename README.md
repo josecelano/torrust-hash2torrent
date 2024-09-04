@@ -8,6 +8,8 @@ The API is based on the Rust BitTorrent client [rqbit](<https://github.com/ikats
 
 > NOTICE: DHT must be enabled because the client needs to find peers first.
 
+Live demo: <https://hash2torrent.com/>
+
 ## Setup
 
 ```console
