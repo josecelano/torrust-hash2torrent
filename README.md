@@ -1,5 +1,7 @@
 # Torrust Hash2Torrent
 
+[![Testing](https://github.com/torrust/torrust-hash2torrent/actions/workflows/testing.yaml/badge.svg)](https://github.com/torrust/torrust-hash2torrent/actions/workflows/testing.yaml) [![Container](https://github.com/torrust/torrust-hash2torrent/actions/workflows/container.yaml/badge.svg)](https://github.com/torrust/torrust-hash2torrent/actions/workflows/container.yaml)
+
 A web service to get torrents' metadata from the infohashes.
 
 The API is based on the Rust BitTorrent client [rqbit](<https://github.com/ikatson/rqbit>). The client uses [BEP 9](https://www.bittorrent.org/beps/bep_0009.html) to get the Metadata Files from other peers.
@@ -38,3 +40,7 @@ Or with the browser:
 > NOTICE: The BitTorrent client may not find the torrent and the HTTP could return a 408 (timeout) error after 10
 
 You can check the API with the health_check endpoint: <http://127.0.0.1:3000/health_check>
+
+## Acknowledgments
+
+[ikatson](<https://github.com/ikatson>) main contributor to [rqbit](https://github.com/ikatson/rqbit).

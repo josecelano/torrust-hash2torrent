@@ -12,6 +12,7 @@
         "comms",
         "Containerfile",
         "distroless",
+        "ikatson",
         "infohash",
         "librqbit",
         "libz",
