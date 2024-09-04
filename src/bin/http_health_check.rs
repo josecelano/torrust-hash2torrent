@@ -22,7 +22,10 @@ async fn main() {
 
     let url = &args[1].clone();
 
-    let client = Client::builder().timeout(Duration::from_secs(5)).build().unwrap();
+    let client = Client::builder()
+        .timeout(Duration::from_secs(5))
+        .build()
+        .unwrap();
 
     match client.get(url).send().await {
         Ok(response) => {

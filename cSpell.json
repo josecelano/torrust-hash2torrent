@@ -2,6 +2,7 @@
     "words": [
         "adduser",
         "autoclean",
+        "bencoded",
         "binascii",
         "bincode",
         "binstall",

@@ -150,8 +150,6 @@
 //!  }
 //! ```
 //!
-//! Refer to the struct [`TorrentInfoDictionary`](crate::models::torrent_file::TorrentInfoDictionary) for more info.
-//!
 //! Regarding the `source` field, it is not clear was was the initial intention
 //! for that field. It could be an string to identify the source of the torrent.
 //! But it has been used by private trackers to identify the tracker that
@@ -379,13 +377,15 @@ mod tests {
     }
 
     #[test]
-    fn an_info_hash_can_be_created_from_a_valid_40_utf8_char_string_representing_an_hexadecimal_value() {
+    fn an_info_hash_can_be_created_from_a_valid_40_utf8_char_string_representing_an_hexadecimal_value(
+    ) {
         let info_hash = InfoHash::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
         assert!(info_hash.is_ok());
     }
 
     #[test]
-    fn an_info_hash_can_not_be_created_from_a_utf8_string_representing_a_not_valid_hexadecimal_value() {
+    fn an_info_hash_can_not_be_created_from_a_utf8_string_representing_a_not_valid_hexadecimal_value(
+    ) {
         let info_hash = InfoHash::from_str("GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG");
         assert!(info_hash.is_err());
     }
@@ -405,14 +405,17 @@ mod tests {
 
         let output = format!("{info_hash}");
 
-        assert_eq!(output, "ffffffffffffffffffffffffffffffffffffffff");
+        assert_eq!(output, "ffffffffffffffffffffffffffffffffffffffff"); // DevSkim: ignore DS173237
     }
 
     #[test]
     fn an_info_hash_should_return_its_a_40_utf8_lowercased_char_hex_representations_as_string() {
         let info_hash = InfoHash::from_str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").unwrap();
 
-        assert_eq!(info_hash.to_hex_string(), "ffffffffffffffffffffffffffffffffffffffff");
+        assert_eq!(
+            info_hash.to_hex_string(),
+            "ffffffffffffffffffffffffffffffffffffffff" // DevSkim: ignore DS173237
+        );
     }
 
     #[test]
@@ -465,14 +468,14 @@ mod tests {
 
         assert_eq!(
             json_serialized_value,
-            r#"{"info_hash":"ffffffffffffffffffffffffffffffffffffffff"}"#
+            r#"{"info_hash":"ffffffffffffffffffffffffffffffffffffffff"}"# // DevSkim: ignore DS173237
         );
     }
 
     #[test]
     fn an_info_hash_can_be_deserialized() {
         let json = json!({
-            "info_hash": "ffffffffffffffffffffffffffffffffffffffff",
+            "info_hash": "ffffffffffffffffffffffffffffffffffffffff", // DevSkim: ignore DS173237
         });
 
         let s: ContainingInfoHash = serde_json::from_value(json).unwrap();
