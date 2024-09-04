@@ -5,6 +5,7 @@ use std::{
 
 use bytes::Bytes;
 use camino::Utf8PathBuf;
+use tracing::info;
 
 use crate::bit_torrent::info_hash::InfoHash;
 
@@ -30,6 +31,10 @@ impl Cache {
     ///
     /// Will return an error if tt can't create or write the cache file.
     pub fn add(&self, info_hash: &InfoHash, data: &Bytes) -> io::Result<()> {
+        let filepath = self.path(info_hash);
+
+        info!("adding torrent to cache in {filepath}");
+
         let mut file = File::create(self.path(info_hash))?;
 
         file.write_all(data)?;

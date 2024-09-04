@@ -9,6 +9,8 @@ use librqbit::{
     TorrentMetaV1Info,
 };
 
+use crate::config::Client as ClientConfig;
+
 #[derive(Error, Debug)]
 pub enum ResolveMagnetError {
     #[error("BitTorrent client session not started")]
@@ -22,14 +24,16 @@ pub enum ResolveMagnetError {
 pub struct Client {
     pub opt_session: Option<Arc<Session>>,
     pub output_dir: Utf8PathBuf,
+    pub listen_port_range: Option<std::ops::Range<u16>>,
 }
 
 impl Client {
     #[must_use]
-    pub fn new(output_dir: Utf8PathBuf) -> Self {
+    pub fn new(config: ClientConfig) -> Self {
         Self {
             opt_session: None,
-            output_dir,
+            output_dir: config.session_output_dir,
+            listen_port_range: config.listen_port_range,
         }
     }
 
@@ -37,8 +41,14 @@ impl Client {
     ///
     /// Will return an error if the session can't be created.
     pub async fn start_session(&mut self) -> Result<(), anyhow::Error> {
+        let opts = librqbit::SessionOptions {
+            disable_dht: false, // DHT is needed to get the list of peers having the torrent.
+            listen_port_range: self.listen_port_range.clone(),
+            ..Default::default()
+        };
+
         self.opt_session = Some(
-            Session::new(self.output_dir.clone().into())
+            Session::new_with_opts(self.output_dir.clone().into(), opts)
                 .await
                 .context("error creating session")?,
         );

@@ -3,6 +3,7 @@ pub mod handler;
 pub mod slowloris;
 
 use axum::error_handling::HandleErrorLayer;
+use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::{BoxError, Router};
 use axum_server::Server;
@@ -37,11 +38,12 @@ pub async fn start(bind_to: &SocketAddr, state: AppState) {
         .local_addr()
         .expect("Could not get local_addr from tcp_listener.");
 
-    info!("server bound to address: http://{server_address}"); // DevSkim: ignore DS137138
+    info!("API bound to address: http://{server_address}"); // DevSkim: ignore DS137138
 
     let server = from_tcp_with_timeouts(socket);
 
     let app = Router::new()
+        .route("/health_check", get(health_check))
         .route("/torrents/:info_hash", get(get_metainfo))
         .layer(TraceLayer::new_for_http())
         .layer(
@@ -79,4 +81,8 @@ fn from_tcp_with_timeouts(socket: TcpListener) -> Server {
         .keep_alive_interval(Duration::from_secs(1));
 
     server
+}
+
+async fn health_check() -> Response {
+    (StatusCode::OK, "OK").into_response()
 }

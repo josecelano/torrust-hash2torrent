@@ -1,15 +1,30 @@
 {
     "words": [
+        "adduser",
+        "autoclean",
         "binascii",
+        "bincode",
+        "binstall",
+        "bitvec",
         "btih",
         "camino",
+        "comms",
+        "Containerfile",
+        "distroless",
         "infohash",
         "librqbit",
+        "libz",
         "metainfo",
+        "proto",
+        "realpath",
+        "reqwest",
         "rqbit",
         "serde",
         "Slowloris",
-        "thiserror"
+        "thiserror",
+        "tlsv",
+        "urlencoding",
+        "Werror"
     ],
     "enableFiletypes": [
         "dockerfile",
