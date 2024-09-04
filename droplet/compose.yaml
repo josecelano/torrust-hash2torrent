@@ -1,0 +1,62 @@
+---
+name: torrust
+services:
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - ./storage/proxy/webroot:/var/www/html
+      - ./storage/certbot/etc:/etc/letsencrypt
+      - ./storage/certbot/lib:/var/lib/letsencrypt
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+    depends_on:
+      - proxy
+
+  proxy:
+    image: nginx:mainline-alpine
+    container_name: proxy
+    restart: unless-stopped
+    networks:
+      - backend_network
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./storage/proxy/webroot:/var/www/html
+      - ./storage/proxy/etc/nginx-conf:/etc/nginx/conf.d
+      - ./storage/certbot/etc:/etc/letsencrypt
+      - ./storage/certbot/lib:/var/lib/letsencrypt
+      - ./storage/dhparam:/etc/ssl/certs
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+    depends_on:
+      - hash2torrent
+
+  hash2torrent:
+    image: torrust/hash2torrent:main
+    container_name: hash2torrent
+    tty: true
+    restart: unless-stopped
+    environment:
+      - USER_ID=${USER_ID}
+    networks:
+      - backend_network
+    ports:
+      - "3000:3000"
+      - "51000-51010"
+    volumes:
+      - ./storage/hash2torrent/lib:/var/lib/torrust/hash2torrent:Z
+      - ./storage/hash2torrent/log:/var/log/torrust/hash2torrent:Z
+      - ./storage/hash2torrent/etc:/etc/torrust/hash2torrent:Z
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+
+networks:
+  backend_network: {}

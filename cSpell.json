@@ -9,11 +9,14 @@
         "bitvec",
         "btih",
         "camino",
+        "certbot",
+        "certonly",
         "comms",
         "Containerfile",
         "distroless",
         "ikatson",
         "infohash",
+        "letsencrypt",
         "librqbit",
         "libz",
         "metainfo",
@@ -26,6 +29,7 @@
         "thiserror",
         "tlsv",
         "urlencoding",
+        "webroot",
         "Werror"
     ],
     "enableFiletypes": [
