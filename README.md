@@ -2,6 +2,10 @@
 
 A web service to get torrents' metadata from the infohashes.
 
+The API is based on the Rust BitTorrent client [rqbit](<https://github.com/ikatson/rqbit>). The client uses [BEP 9](https://www.bittorrent.org/beps/bep_0009.html) to get the Metadata Files from other peers.
+
+> NOTICE: DHT must be enabled because the client needs to find peers first.
+
 ## Setup
 
 ```console
