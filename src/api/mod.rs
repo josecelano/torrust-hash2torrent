@@ -3,12 +3,12 @@ pub mod handler;
 pub mod slowloris;
 
 use axum::error_handling::HandleErrorLayer;
-use axum::response::{IntoResponse, Response};
+
 use axum::routing::get;
 use axum::{BoxError, Router};
 use axum_server::Server;
 
-use handler::get_metainfo;
+use handler::{entrypoint_handler, get_metainfo_file_handler, health_check_handler};
 use hyper::StatusCode;
 use hyper_util::rt::TokioTimer;
 use std::net::{SocketAddr, TcpListener};
@@ -43,8 +43,9 @@ pub async fn start(bind_to: &SocketAddr, state: AppState) {
     let server = from_tcp_with_timeouts(socket);
 
     let app = Router::new()
-        .route("/health_check", get(health_check))
-        .route("/torrents/:info_hash", get(get_metainfo))
+        .route("/", get(entrypoint_handler))
+        .route("/health_check", get(health_check_handler))
+        .route("/torrents/:info_hash", get(get_metainfo_file_handler))
         .layer(TraceLayer::new_for_http())
         .layer(
             ServiceBuilder::new()
@@ -81,8 +82,4 @@ fn from_tcp_with_timeouts(socket: TcpListener) -> Server {
         .keep_alive_interval(Duration::from_secs(1));
 
     server
-}
-
-async fn health_check() -> Response {
-    (StatusCode::OK, "OK").into_response()
 }

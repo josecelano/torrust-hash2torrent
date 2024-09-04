@@ -1,5 +1,5 @@
 use axum::extract::{Path, State};
-use axum::response::{IntoResponse, Response};
+use axum::response::{Html, IntoResponse, Response};
 use bytes::Bytes;
 use hyper::{header, HeaderMap, StatusCode};
 
@@ -28,7 +28,8 @@ impl InfoHashParam {
     }
 }
 
-pub async fn get_metainfo(
+#[allow(clippy::module_name_repetitions)]
+pub async fn get_metainfo_file_handler(
     State(app_state): State<Arc<AppState>>,
     Path(info_hash): Path<InfoHashParam>,
 ) -> Response {
@@ -101,4 +102,126 @@ pub fn torrent_file_response(bytes: Bytes, filename: &str, info_hash: &str) -> R
     );
 
     (StatusCode::OK, headers, bytes).into_response()
+}
+
+#[allow(clippy::module_name_repetitions)]
+pub async fn health_check_handler() -> Response {
+    (StatusCode::OK, "OK").into_response()
+}
+
+#[allow(clippy::module_name_repetitions)]
+pub async fn entrypoint_handler() -> Html<&'static str> {
+    let html = r#"
+    <!DOCTYPE html>
+    <html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Hash2Torrent</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+                background-color: #f8f9fa;
+            }
+
+            h1 {
+                font-size: 3em;
+                margin-bottom: 20px;
+                color: #333;
+            }
+
+            p {
+                font-size: 1.1em;
+                margin-bottom: 30px;
+                color: #555;
+                text-align: center;
+            }
+
+            .input-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                margin-bottom: 50px;
+            }
+
+            input[type="text"] {
+                width: 400px;
+                padding: 10px;
+                font-size: 1.1em;
+                margin-bottom: 20px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                transition: border-color 0.3s;
+            }
+
+            input[type="text"]:focus {
+                border-color: #007bff;
+                outline: none;
+            }
+
+            button {
+                padding: 10px 20px;
+                font-size: 1.1em;
+                color: #fff;
+                background-color: #007bff;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: background-color 0.3s;
+            }
+
+            button:hover {
+                background-color: #0056b3;
+            }
+
+            .github-link {
+                margin-top: 20px;
+                font-size: 1em;
+                color: #007bff;
+                text-decoration: none;
+                transition: color 0.3s;
+            }
+
+            .github-link:hover {
+                color: #0056b3;
+            }
+        </style>
+    </head>
+
+    <body>
+        <h1>Hash2Torrent</h1>
+
+        <div class="input-container">
+            <input type="text" id="infohash" placeholder="">
+            <button onclick="downloadTorrent()">Download metadata</button>
+        </div>
+
+        <p>Introduce a torrent v1 infohash like <a href="/torrents/443c7602b4fde83d1154d6d9da48808418b181b6">443c7602b4fde83d1154d6d9da48808418b181b6</a><br/> and download the bencoded torrent metadata (only info dictionary)</p>
+
+        <a href="https://github.com/torrust/torrust-hash2torrent" class="github-link" target="_blank">Fork on GitHub</a>
+
+        <script>
+            function downloadTorrent() {
+                var infohash = document.getElementById('infohash').value.trim();
+                if (infohash) {
+                    window.location.href = '/torrents/' + infohash;
+                } else {
+                    alert('Please enter a valid infohash like 443c7602b4fde83d1154d6d9da48808418b181b6');
+                }
+            }
+        </script>
+    </body>
+
+    </html>
+    "#;
+
+    Html(html) // Wrap HTML content in Html response type
 }
